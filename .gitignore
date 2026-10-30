@@ -1,0 +1,12 @@
+# Downloaded by install.sh from sources.txt
+/mpv/scripts/*
+!/mpv/scripts/bilibili_sponsorblock.lua
+/mpv/fonts/
+/mpv/shaders/
+
+# Personal history written by mpv and its scripts
+/mpv/watch_later/
+/mpv/*-history.*
+/mpv/memo-history.log
+
+.DS_Store

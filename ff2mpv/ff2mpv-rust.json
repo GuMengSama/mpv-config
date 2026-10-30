@@ -1,0 +1,8 @@
+{
+    "player_command": "/opt/homebrew/bin/mpv",
+    "player_args": [
+        "--no-terminal",
+        "--script-opts=ytdl_hook-ytdl_path=/opt/homebrew/bin/yt-dlp",
+        "--"
+    ]
+}

@@ -1,0 +1,15 @@
+# Third-party files that install.sh downloads into mpv/.
+# They are not committed; each one is pinned to the version that was tested.
+#
+# git <repo> <commit> <path in repo> <path under mpv/>
+# zip <url> <sha256> <path in zip> <path under mpv/>
+
+zip https://github.com/tomasklaen/uosc/releases/download/5.13.0/uosc.zip 4be9da3289285300fa374496c3f1bfd7bb20ac08e890d25bd5a06b28eebe4882 scripts/uosc scripts/uosc
+zip https://github.com/tomasklaen/uosc/releases/download/5.13.0/uosc.zip 4be9da3289285300fa374496c3f1bfd7bb20ac08e890d25bd5a06b28eebe4882 fonts fonts
+git https://github.com/po5/thumbfast 0f711de3138c9bd6718209d819ac54022c23ded2 thumbfast.lua scripts/thumbfast.lua
+git https://github.com/po5/memo e0624611438b2e19ef4b7e24f53461c9d0304b07 memo.lua scripts/memo.lua
+git https://github.com/Eisa01/mpv-scripts 6cd0b17ad0f6758ead3d3ab98baf3a564b7de876 scripts/SmartCopyPaste.lua scripts/SmartCopyPaste.lua
+git https://github.com/Tony15246/uosc_danmaku d896f179aac1c9e7e657664dbe8a69567a9a4900 . scripts/uosc_danmaku
+git https://github.com/po5/mpv_sponsorblock 7785c1477103f2fafabfd65fdcf28ef26e6d7f0d sponsorblock.lua scripts/sponsorblock.lua
+git https://github.com/po5/mpv_sponsorblock 7785c1477103f2fafabfd65fdcf28ef26e6d7f0d sponsorblock_shared scripts/sponsorblock_shared
+zip https://github.com/bloc97/Anime4K/releases/download/v4.0.1/Anime4K_v4.0.zip 139cd282086457c5adc79caf7b75b8b825091d71c9b54958c18745fea62d7ed7 . shaders
