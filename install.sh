@@ -40,11 +40,19 @@ step_fetch() {
     local kind url pin src dest dir
     while read -r kind url pin src dest; do
         [[ -z $kind || $kind == \#* ]] && continue
+        if [[ $kind == file && -f $REPO/mpv/$dest ]] &&
+            echo "$pin  $REPO/mpv/$dest" | shasum -a 256 -c --quiet 2>/dev/null; then
+            continue
+        fi
         dir="$WORK/$(basename "$url")-${pin:0:12}"
         if [[ ! -d $dir ]]; then
             echo "Downloading $url"
             if [[ $kind == git ]]; then
                 checkout "$url" "$pin" "$dir"
+            elif [[ $kind == file ]]; then
+                mkdir "$dir"
+                curl -fsSL -o "$dir/$src" "$url"
+                echo "$pin  $dir/$src" | shasum -a 256 -c --quiet
             else
                 curl -fsSL -o "$dir.zip" "$url"
                 echo "$pin  $dir.zip" | shasum -a 256 -c --quiet
@@ -59,7 +67,7 @@ step_fetch() {
             cp "$dir/$src" "$REPO/mpv/$dest"
         fi
     done < "$REPO/sources.txt"
-    echo "Third-party scripts, fonts and shaders are in $REPO/mpv"
+    echo "Third-party scripts, fonts, shaders and models are in $REPO/mpv"
 }
 
 step_link() {
@@ -120,7 +128,7 @@ run() {
     local question
     case $1 in
         brew)   question="Install Homebrew packages from the Brewfile?" ;;
-        fetch)  question="Download the pinned third-party scripts, fonts and shaders into $REPO/mpv?" ;;
+        fetch)  question="Download the pinned third-party scripts, fonts, shaders and models into $REPO/mpv?" ;;
         link)   question="Point $MPV_DIR at $REPO/mpv (an existing one is renamed to a backup)?" ;;
         ff2mpv) question="Build ff2mpv-rust and install its config and Chrome manifest?" ;;
         *)      echo "Unknown step: $1 (use brew, fetch, link or ff2mpv)"; exit 1 ;;

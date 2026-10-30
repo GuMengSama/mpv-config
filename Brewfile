@@ -3,6 +3,8 @@ tap "gumengsama/tap"
 brew "mpv"
 brew "yt-dlp"
 brew "ffmpeg"
+# whisper-cli for whisper_subs.lua
+brew "whisper.cpp"
 # python3 for the YouTube SponsorBlock script
 brew "python"
 

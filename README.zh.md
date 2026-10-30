@@ -6,9 +6,9 @@
 
 ## 内容
 
-- `mpv/`：`mpv.conf`、`input.conf`、`script-opts/` 和 `bilibili_sponsorblock.lua`
-- `sources.txt`：固定版本的第三方脚本、字体和着色器，由 `install.sh` 下载
-- `Brewfile`：mpv、yt-dlp、ffmpeg、python、[mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
+- `mpv/`：`mpv.conf`、`input.conf`、`script-opts/`、`bilibili_sponsorblock.lua` 和 `whisper_subs.lua`
+- `sources.txt`：固定版本的第三方脚本、字体、着色器和 Whisper 模型，由 `install.sh` 下载
+- `Brewfile`：mpv、yt-dlp、ffmpeg、python、whisper.cpp、[mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
 - `ff2mpv/ff2mpv-rust.json`：[ff2mpv-rust](https://github.com/ryze312/ff2mpv-rust) 配置
 
 第三方组件：[uosc](https://github.com/tomasklaen/uosc)、
@@ -19,6 +19,10 @@
 [Anime4K](https://github.com/bloc97/Anime4K)。
 `bilibili_sponsorblock.lua` 的数据来自
 [BilibiliSponsorBlock](https://github.com/hanydd/BilibiliSponsorBlock)。
+
+`whisper_subs.lua` 使用 [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+离线生成字幕，从当前播放位置开始并保持领先于播放进度。`Ctrl+g` 开始或停止；
+选项见 `script-opts/whisper_subs.conf`。模型（约 550 MB）由 `fetch` 下载。
 
 ## 安装
 

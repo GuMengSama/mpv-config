@@ -7,9 +7,9 @@ script.
 
 ## Contents
 
-- `mpv/`: `mpv.conf`, `input.conf`, `script-opts/`, and `bilibili_sponsorblock.lua`
-- `sources.txt`: pinned third-party scripts, fonts and shaders, downloaded by `install.sh`
-- `Brewfile`: mpv, yt-dlp, ffmpeg, python, [mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
+- `mpv/`: `mpv.conf`, `input.conf`, `script-opts/`, `bilibili_sponsorblock.lua`, and `whisper_subs.lua`
+- `sources.txt`: pinned third-party scripts, fonts, shaders and Whisper models, downloaded by `install.sh`
+- `Brewfile`: mpv, yt-dlp, ffmpeg, python, whisper.cpp, [mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
 - `ff2mpv/ff2mpv-rust.json`: [ff2mpv-rust](https://github.com/ryze312/ff2mpv-rust) config
 
 Third-party components: [uosc](https://github.com/tomasklaen/uosc),
@@ -20,6 +20,11 @@ Third-party components: [uosc](https://github.com/tomasklaen/uosc),
 [Anime4K](https://github.com/bloc97/Anime4K).
 `bilibili_sponsorblock.lua` uses data from
 [BilibiliSponsorBlock](https://github.com/hanydd/BilibiliSponsorBlock).
+
+`whisper_subs.lua` generates subtitles offline with
+[whisper.cpp](https://github.com/ggml-org/whisper.cpp), starting at the playhead
+and staying ahead of playback. `Ctrl+g` starts and stops it; options are in
+`script-opts/whisper_subs.conf`. The model (~550 MB) is downloaded by `fetch`.
 
 ## Install
 
