@@ -3,6 +3,7 @@
 !/mpv/scripts/bilibili_sponsorblock.lua
 !/mpv/scripts/whisper_subs.lua
 !/mpv/scripts/loading_message.lua
+!/mpv/scripts/stream_quality.lua
 /mpv/models/
 /mpv/fonts/
 /mpv/shaders/
