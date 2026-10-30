@@ -43,20 +43,35 @@ cd mpv-config
 | `brew` | `brew bundle` |
 | `fetch` | Downloads `sources.txt` entries into `mpv/` and verifies them |
 | `link` | Symlinks `~/.config/mpv` to `mpv/`. An existing directory is renamed to `~/.config/mpv.backup-<date>` |
-| `ff2mpv` | Builds ff2mpv-rust into `~/.local/bin`, symlinks `~/.config/ff2mpv-rust.json`, and installs the Chrome native messaging manifest. Installs Rust via rustup if absent |
+| `ff2mpv` | Builds ff2mpv-rust into `~/.local/bin`, symlinks `~/.config/ff2mpv-rust.json`, and installs the Chrome native messaging manifest. Signs the binary with a local certificate (see below). Installs Rust via rustup if absent |
 | `pot` | Builds [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) in `~/bgutil-ytdlp-pot-provider` and installs its yt-dlp plugin. YouTube refuses many streams without the PO tokens it generates |
 
 Existing ff2mpv files are not overwritten. Then install the
 [ff2mpv extension](https://chromewebstore.google.com/detail/ff2mpv/ephjcajbkgplkjmelpglennepbpmdpjg)
 and restart Chrome.
 
-`mpv.conf` passes Chrome's cookies to yt-dlp. macOS blocks this when Chrome
-starts mpv, so give `~/.local/bin/ff2mpv-rust` Full Disk Access (System
-Settings → Privacy & Security). Without it, no video opens from ff2mpv. Repeat
-after every `ff2mpv` step, as macOS drops the access when the binary changes.
+### Full Disk Access
+
+`mpv.conf` has yt-dlp read Chrome's cookies, which YouTube requires and which
+unlock login-only qualities elsewhere. When Chrome starts mpv, macOS allows this
+only if `~/.local/bin/ff2mpv-rust` has Full Disk Access.
+
+The first `ff2mpv` step creates a certificate named "ff2mpv-rust local signing"
+in the login keychain, asks for your password to trust it for code signing, and
+opens System Settings. Add `~/.local/bin/ff2mpv-rust` there (Cmd+Shift+G types a
+path). Later builds are signed with the same certificate, so the access stays.
 
 After `link`, moving the repository breaks the symlink; run `./install.sh link`
 again.
+
+## Troubleshooting
+
+- No window opens from ff2mpv: check that `ff2mpv-rust` is enabled under Full
+  Disk Access. If it is, remove it and add it again.
+- YouTube asks to sign in: sign in to YouTube in Chrome. If it persists, run
+  `brew upgrade yt-dlp`.
+- To see why a video fails, run
+  `mpv --msg-level=ytdl_hook=v '<url>'` in a terminal.
 
 ## Updating
 

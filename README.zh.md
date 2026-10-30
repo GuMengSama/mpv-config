@@ -40,18 +40,29 @@ cd mpv-config
 | `brew` | `brew bundle` |
 | `fetch` | 下载 `sources.txt` 中的条目到 `mpv/` 并校验 |
 | `link` | 将 `~/.config/mpv` 链接到 `mpv/`。已有目录会重命名为 `~/.config/mpv.backup-<日期>` |
-| `ff2mpv` | 编译 ff2mpv-rust 到 `~/.local/bin`，链接 `~/.config/ff2mpv-rust.json`，并安装 Chrome native messaging 清单。未安装 Rust 时通过 rustup 安装 |
+| `ff2mpv` | 编译 ff2mpv-rust 到 `~/.local/bin`，链接 `~/.config/ff2mpv-rust.json`，并安装 Chrome native messaging 清单。用本机证书为其签名（见下文）。未安装 Rust 时通过 rustup 安装 |
 | `pot` | 在 `~/bgutil-ytdlp-pot-provider` 编译 [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) 并安装其 yt-dlp 插件。YouTube 的许多视频流需要它生成的 PO token |
 
 不会覆盖已有的 ff2mpv 文件。完成后安装
 [ff2mpv 扩展](https://chromewebstore.google.com/detail/ff2mpv/ephjcajbkgplkjmelpglennepbpmdpjg)
 并重启 Chrome。
 
-`mpv.conf` 让 yt-dlp 读取 Chrome 的 cookies。由 Chrome 启动 mpv 时 macOS 会阻止读取，
-因此需在系统设置 → 隐私与安全性中为 `~/.local/bin/ff2mpv-rust` 授予完全磁盘访问权限，
-否则 ff2mpv 无法打开任何视频。每次执行 `ff2mpv` 步骤后需重新授予，二进制文件变化后 macOS 会撤销该权限。
+### 完全磁盘访问权限
+
+`mpv.conf` 让 yt-dlp 读取 Chrome 的 cookies：YouTube 必须登录，其他网站可借此获得需登录的画质。
+由 Chrome 启动 mpv 时，只有 `~/.local/bin/ff2mpv-rust` 拥有完全磁盘访问权限，macOS 才允许读取。
+
+首次执行 `ff2mpv` 步骤会在登录钥匙串中创建名为 "ff2mpv-rust local signing" 的证书，
+要求输入密码将其设为代码签名可信，并打开系统设置。在其中添加 `~/.local/bin/ff2mpv-rust`
+（Cmd+Shift+G 可输入路径）。之后的编译使用同一证书签名，权限保持有效。
 
 执行 `link` 后移动仓库会使链接失效，需重新执行 `./install.sh link`。
+
+## 故障排除
+
+- ff2mpv 打不开窗口：检查完全磁盘访问权限中是否已启用 `ff2mpv-rust`；若已启用，移除后重新添加。
+- YouTube 要求登录：在 Chrome 中登录 YouTube。仍有问题时执行 `brew upgrade yt-dlp`。
+- 查看视频失败原因：在终端执行 `mpv --msg-level=ytdl_hook=v '<url>'`。
 
 ## 更新
 

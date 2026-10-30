@@ -11,6 +11,7 @@ FF2MPV_REPO=https://github.com/ryze312/ff2mpv-rust
 FF2MPV_COMMIT=14d663e14b5ca5a9106e9da5c171ae8044ef280c # tag 1.1.7
 FF2MPV_CONFIG="$HOME/.config/ff2mpv-rust.json"
 CHROME_HOSTS="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+SIGN_NAME="ff2mpv-rust local signing"
 POT_REPO=https://github.com/Brainicism/bgutil-ytdlp-pot-provider
 POT_VERSION=2.0.2
 POT_COMMIT=26475e9d3665b972c4aeb83b4dbaafcf64b88438 # tag 2.0.2
@@ -92,6 +93,35 @@ step_link() {
     echo "Linked $MPV_DIR to $REPO/mpv"
 }
 
+# Creates a self-signed code signing certificate in the login keychain, made on
+# this Mac and never shared, and trusts it for code signing only
+make_signing_identity() {
+    if ! security find-certificate -c "$SIGN_NAME" >/dev/null 2>&1; then
+        echo "Creating the code signing certificate \"$SIGN_NAME\""
+        cat > "$WORK/cert.cnf" <<EOF
+[req]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[dn]
+CN = $SIGN_NAME
+[ext]
+basicConstraints = critical, CA:false
+keyUsage = critical, digitalSignature
+extendedKeyUsage = critical, codeSigning
+EOF
+        /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$WORK/cert.cnf" \
+            -keyout "$WORK/key.pem" -out "$WORK/cert.pem" 2>/dev/null
+        /usr/bin/openssl pkcs12 -export -inkey "$WORK/key.pem" -in "$WORK/cert.pem" \
+            -out "$WORK/id.p12" -passout pass:ff2mpv
+        security import "$WORK/id.p12" -P ff2mpv -T /usr/bin/codesign >/dev/null
+        rm -f "$WORK/key.pem" "$WORK/id.p12"
+    fi
+    security find-certificate -c "$SIGN_NAME" -p > "$WORK/cert.pem"
+    echo "macOS asks for your password to trust \"$SIGN_NAME\" for code signing"
+    security add-trusted-cert -p codeSign "$WORK/cert.pem"
+}
+
 step_ff2mpv() {
     local cargo="$HOME/.cargo/bin/cargo"
     if [[ ! -x $cargo ]]; then
@@ -106,8 +136,24 @@ step_ff2mpv() {
     mkdir -p "$HOME/.local/bin"
     install -m 755 "$WORK/ff2mpv-rust/target/release/ff2mpv-rust" "$HOME/.local/bin/ff2mpv-rust"
     echo "Installed $HOME/.local/bin/ff2mpv-rust"
-    echo "Give it Full Disk Access in System Settings, so yt-dlp can read Chrome's"
-    echo "cookies when Chrome starts mpv. macOS drops the access after every rebuild."
+
+    # mpv.conf has yt-dlp read Chrome's cookies, which macOS only allows a
+    # process started by Chrome if ff2mpv-rust has Full Disk Access. macOS ties
+    # that access to the signature, so sign with a fixed certificate: an
+    # unsigned build loses the access on every rebuild
+    local new_identity=false
+    if ! security find-identity -v -p codesigning | grep -qF "\"$SIGN_NAME\""; then
+        make_signing_identity
+        new_identity=true
+    fi
+    codesign -f -s "$SIGN_NAME" -i ff2mpv-rust "$HOME/.local/bin/ff2mpv-rust"
+    echo "Signed it with \"$SIGN_NAME\""
+    if $new_identity; then
+        echo "Add $HOME/.local/bin/ff2mpv-rust to Full Disk Access (Cmd+Shift+G in the"
+        echo "file picker types a path), replacing any existing ff2mpv-rust entry."
+        echo "Without it, no video opens from ff2mpv. It is needed only once."
+        open "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"
+    fi
 
     if [[ -L $FF2MPV_CONFIG && "$(readlink "$FF2MPV_CONFIG")" == "$REPO/ff2mpv/ff2mpv-rust.json" ]]; then
         echo "$FF2MPV_CONFIG already points to the repo"
