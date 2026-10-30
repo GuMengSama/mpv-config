@@ -2,7 +2,7 @@
 # Restores this mpv setup on a Mac. Asks before each step and is safe to re-run.
 #
 #   ./install.sh            run every step
-#   ./install.sh <step>     run one step: brew, fetch, link, ff2mpv
+#   ./install.sh <step>     run one step: brew, fetch, link, ff2mpv, pot
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
@@ -11,6 +11,12 @@ FF2MPV_REPO=https://github.com/ryze312/ff2mpv-rust
 FF2MPV_COMMIT=14d663e14b5ca5a9106e9da5c171ae8044ef280c # tag 1.1.7
 FF2MPV_CONFIG="$HOME/.config/ff2mpv-rust.json"
 CHROME_HOSTS="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+POT_REPO=https://github.com/Brainicism/bgutil-ytdlp-pot-provider
+POT_VERSION=2.0.2
+POT_COMMIT=26475e9d3665b972c4aeb83b4dbaafcf64b88438 # tag 2.0.2
+POT_ZIP_SHA256=a26b980bf6d8e8400d8f21445daa4d8381bf6183d20f0be309391f86b31e27ef
+POT_DIR="$HOME/bgutil-ytdlp-pot-provider"
+YTDLP_PLUGINS="$HOME/.config/yt-dlp/plugins"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -100,6 +106,8 @@ step_ff2mpv() {
     mkdir -p "$HOME/.local/bin"
     install -m 755 "$WORK/ff2mpv-rust/target/release/ff2mpv-rust" "$HOME/.local/bin/ff2mpv-rust"
     echo "Installed $HOME/.local/bin/ff2mpv-rust"
+    echo "Give it Full Disk Access in System Settings, so yt-dlp can read Chrome's"
+    echo "cookies when Chrome starts mpv. macOS drops the access after every rebuild."
 
     if [[ -L $FF2MPV_CONFIG && "$(readlink "$FF2MPV_CONFIG")" == "$REPO/ff2mpv/ff2mpv-rust.json" ]]; then
         echo "$FF2MPV_CONFIG already points to the repo"
@@ -124,6 +132,26 @@ step_ff2mpv() {
     fi
 }
 
+# YouTube refuses many streams without a PO token. This builds the generator
+# that yt-dlp's bgutil plugin runs on demand, and installs the plugin
+step_pot() {
+    if [[ -d $POT_DIR && "$(git -C "$POT_DIR" rev-parse HEAD 2>/dev/null)" != "$POT_COMMIT" ]]; then
+        echo "Left the existing $POT_DIR alone; it is not at tag $POT_VERSION"
+        return
+    fi
+    if [[ ! -d $POT_DIR ]]; then
+        checkout "$POT_REPO" "$POT_COMMIT" "$POT_DIR"
+    fi
+    (cd "$POT_DIR/server" && npm ci --no-audit --no-fund && npx tsc)
+    echo "Built the PO token generator in $POT_DIR"
+
+    curl -fsSL -o "$WORK/pot.zip" "$POT_REPO/releases/download/$POT_VERSION/bgutil-ytdlp-pot-provider.zip"
+    echo "$POT_ZIP_SHA256  $WORK/pot.zip" | shasum -a 256 -c --quiet
+    mkdir -p "$YTDLP_PLUGINS"
+    cp "$WORK/pot.zip" "$YTDLP_PLUGINS/bgutil-ytdlp-pot-provider.zip"
+    echo "Installed the yt-dlp plugin in $YTDLP_PLUGINS"
+}
+
 run() {
     local question
     case $1 in
@@ -131,7 +159,8 @@ run() {
         fetch)  question="Download the pinned third-party scripts, fonts, shaders and models into $REPO/mpv?" ;;
         link)   question="Point $MPV_DIR at $REPO/mpv (an existing one is renamed to a backup)?" ;;
         ff2mpv) question="Build ff2mpv-rust and install its config and Chrome manifest?" ;;
-        *)      echo "Unknown step: $1 (use brew, fetch, link or ff2mpv)"; exit 1 ;;
+        pot)    question="Build the YouTube PO token provider in $POT_DIR and install its yt-dlp plugin?" ;;
+        *)      echo "Unknown step: $1 (use brew, fetch, link, ff2mpv or pot)"; exit 1 ;;
     esac
     # Not "ask && step": set -e is ignored inside a function called from an && list
     if ask "$question"; then
@@ -142,5 +171,5 @@ run() {
 if [[ $# -gt 0 ]]; then
     run "$1"
 else
-    for step in brew fetch link ff2mpv; do run "$step"; done
+    for step in brew fetch link ff2mpv pot; do run "$step"; done
 fi

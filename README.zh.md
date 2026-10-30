@@ -8,7 +8,7 @@
 
 - `mpv/`：`mpv.conf`、`input.conf`、`script-opts/`、`bilibili_sponsorblock.lua` 和 `whisper_subs.lua`
 - `sources.txt`：固定版本的第三方脚本、字体、着色器和 Whisper 模型，由 `install.sh` 下载
-- `Brewfile`：mpv、yt-dlp、ffmpeg、python、whisper.cpp、[mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
+- `Brewfile`：mpv、yt-dlp、ffmpeg、python、whisper.cpp、node、[mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
 - `ff2mpv/ff2mpv-rust.json`：[ff2mpv-rust](https://github.com/ryze312/ff2mpv-rust) 配置
 
 第三方组件：[uosc](https://github.com/tomasklaen/uosc)、
@@ -41,10 +41,15 @@ cd mpv-config
 | `fetch` | 下载 `sources.txt` 中的条目到 `mpv/` 并校验 |
 | `link` | 将 `~/.config/mpv` 链接到 `mpv/`。已有目录会重命名为 `~/.config/mpv.backup-<日期>` |
 | `ff2mpv` | 编译 ff2mpv-rust 到 `~/.local/bin`，链接 `~/.config/ff2mpv-rust.json`，并安装 Chrome native messaging 清单。未安装 Rust 时通过 rustup 安装 |
+| `pot` | 在 `~/bgutil-ytdlp-pot-provider` 编译 [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) 并安装其 yt-dlp 插件。YouTube 的许多视频流需要它生成的 PO token |
 
 不会覆盖已有的 ff2mpv 文件。完成后安装
 [ff2mpv 扩展](https://chromewebstore.google.com/detail/ff2mpv/ephjcajbkgplkjmelpglennepbpmdpjg)
 并重启 Chrome。
+
+`mpv.conf` 让 yt-dlp 读取 Chrome 的 cookies。由 Chrome 启动 mpv 时 macOS 会阻止读取，
+因此需在系统设置 → 隐私与安全性中为 `~/.local/bin/ff2mpv-rust` 授予完全磁盘访问权限，
+否则 ff2mpv 无法打开任何视频。每次执行 `ff2mpv` 步骤后需重新授予，二进制文件变化后 macOS 会撤销该权限。
 
 执行 `link` 后移动仓库会使链接失效，需重新执行 `./install.sh link`。
 
