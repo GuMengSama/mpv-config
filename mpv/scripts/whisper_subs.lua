@@ -313,7 +313,12 @@ local function toggle()
     pump()
 end
 
-mp.add_key_binding(nil, "toggle", toggle)
+-- Ctrl+g starts and stops it. Only bound when whisper.cpp and the model are
+-- installed (the Whisper feature in install.sh)
+if file_exists(options.whisper_path)
+    and file_exists(mp.command_native({"expand-path", options.model})) then
+    mp.add_key_binding("Ctrl+g", "toggle", toggle)
+end
 
 -- After a seek, drop the running chunk if another one is now more urgent
 mp.register_event("playback-restart", function()

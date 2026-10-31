@@ -1,7 +1,8 @@
 #!/bin/bash
-# Restores this mpv setup on a Mac. Asks before each step and is safe to re-run.
+# Restores this mpv setup on a Mac. Asks which features to install, then
+# installs them. Safe to re-run, also to add or remove features.
 #
-#   ./install.sh            run every step
+#   ./install.sh            choose features, then install
 #   ./install.sh <step>     run one step: brew, fetch, link, ff2mpv, pot, whisper
 set -euo pipefail
 
@@ -18,6 +19,22 @@ POT_COMMIT=26475e9d3665b972c4aeb83b4dbaafcf64b88438 # tag 2.0.2
 POT_ZIP_SHA256=a26b980bf6d8e8400d8f21445daa4d8381bf6183d20f0be309391f86b31e27ef
 POT_DIR="$HOME/bgutil-ytdlp-pot-provider"
 YTDLP_PLUGINS="$HOME/.config/yt-dlp/plugins"
+CHOICES="$REPO/.install-features"
+
+# Optional features. mpv, yt-dlp, ffmpeg, uosc, thumbnails and the config are
+# always installed. sources.txt names the feature each download belongs to
+FEATURES=(ff2mpv youtube danmaku sponsorblock anime4k whisper)
+NAMES=("Browser button" "YouTube support" "Bilibili danmaku" "SponsorBlock" "Anime4K shaders" "Whisper subtitles")
+DETAILS=(
+    "open videos from Chrome in mpv (ff2mpv, built with Rust)"
+    "PO token provider YouTube needs for most streams (node)"
+    "bullet comments on Bilibili videos (uosc_danmaku)"
+    "skip sponsored segments on YouTube and Bilibili (python)"
+    "anime upscaling, Ctrl+1-6"
+    "offline subtitles with whisper.cpp, Ctrl+g (~550 MB)"
+)
+DEFAULTS=(1 1 1 1 0 0)
+CHOSEN=("${DEFAULTS[@]}")
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -35,19 +52,129 @@ checkout() {
     git -C "$3" checkout -q FETCH_HEAD
 }
 
-step_brew() {
+# Whether a feature is on this Mac, for installs made before choices were saved
+installed() {
+    case $1 in
+        ff2mpv) [[ -x $HOME/.local/bin/ff2mpv-rust ]] ;;
+        youtube) [[ -d $POT_DIR ]] ;;
+        danmaku) [[ -d $REPO/mpv/scripts/uosc_danmaku ]] ;;
+        sponsorblock) [[ -f $REPO/mpv/scripts/sponsorblock.lua ]] ;;
+        anime4k) [[ -d $REPO/mpv/shaders ]] ;;
+        whisper) [[ -d $REPO/mpv/models ]] ;;
+    esac
+}
+
+# Starts from the last saved choices. Without them, an existing install keeps
+# what it has, so nothing is removed; a fresh clone gets the defaults
+load_choices() {
+    local i
+    if [[ -f $CHOICES ]]; then
+        for i in "${!FEATURES[@]}"; do
+            if grep -qx "${FEATURES[i]}" "$CHOICES"; then CHOSEN[i]=1; else CHOSEN[i]=0; fi
+        done
+    elif [[ -d $REPO/mpv/scripts/uosc ]]; then
+        for i in "${!FEATURES[@]}"; do
+            if installed "${FEATURES[i]}"; then CHOSEN[i]=1; else CHOSEN[i]=0; fi
+        done
+    fi
+}
+
+save_choices() {
+    local i
+    : > "$CHOICES"
+    for i in "${!FEATURES[@]}"; do
+        if [[ ${CHOSEN[i]} == 1 ]]; then echo "${FEATURES[i]}" >> "$CHOICES"; fi
+    done
+}
+
+choose() {
+    local i
+    for i in "${!FEATURES[@]}"; do
+        if [[ ${FEATURES[i]} == "$1" ]]; then CHOSEN[i]=1; fi
+    done
+}
+
+chosen() {
+    [[ $1 == core ]] && return 0
+    local i
+    for i in "${!FEATURES[@]}"; do
+        [[ ${FEATURES[i]} == "$1" ]] && { [[ ${CHOSEN[i]} == 1 ]]; return; }
+    done
+    return 1
+}
+
+choose_features() {
+    local i n reply mark
+    while true; do
+        echo
+        echo "Choose what to install (mpv, uosc, thumbnails and the config are always installed):"
+        for i in "${!FEATURES[@]}"; do
+            mark=" "
+            if [[ ${CHOSEN[i]} == 1 ]]; then mark=x; fi
+            printf "  %d) [%s] %s: %s\n" $((i + 1)) "$mark" "${NAMES[i]}" "${DETAILS[i]}"
+        done
+        read -r -p "Numbers to toggle (e.g. 3 5), Enter to continue: " reply
+        [[ -z $reply ]] && break
+        for n in $reply; do
+            if [[ $n =~ ^[0-9]+$ ]] && ((n >= 1 && n <= ${#FEATURES[@]})); then
+                CHOSEN[n - 1]=$((1 - CHOSEN[n - 1]))
+            else
+                echo "Ignored $n"
+            fi
+        done
+    done
+
+    local on="" off=""
+    for i in "${!FEATURES[@]}"; do
+        if [[ ${CHOSEN[i]} == 1 ]]; then on+="${on:+, }${NAMES[i]}"; else off+="${off:+, }${NAMES[i]}"; fi
+    done
+    echo
+    echo "Install:     mpv, uosc, thumbnails, config${on:+, $on}"
+    if [[ -n $off ]]; then
+        echo "Leave out:   $off"
+        echo "             (their files in mpv/ are removed; Homebrew packages, ff2mpv and"
+        echo "             the PO token provider stay installed if you had them)"
+    fi
+    if [[ -e $MPV_DIR || -L $MPV_DIR ]] && [[ "$(readlink "$MPV_DIR" || true)" != "$REPO/mpv" ]]; then
+        echo "Your existing $MPV_DIR is renamed to a backup and replaced by a link to $REPO/mpv"
+    fi
+    ask "Continue?"
+}
+
+need_brew() {
     if ! command -v brew >/dev/null; then
         echo "Homebrew is not installed. Install it from https://brew.sh, then run this again."
         exit 1
     fi
-    brew bundle --file "$REPO/Brewfile"
 }
 
-# Downloads the entries of a sources file into mpv/ and verifies them
+step_brew() {
+    need_brew
+    brew bundle --file "$REPO/Brewfile"
+    local packages=()
+    if chosen youtube; then packages+=(node); fi
+    if chosen sponsorblock; then packages+=(python); fi
+    if chosen whisper; then packages+=(whisper.cpp); fi
+    if [[ ${#packages[@]} -gt 0 ]]; then brew install "${packages[@]}"; fi
+}
+
+# Downloads the sources.txt entries of the chosen features into mpv/ and
+# verifies them, and removes those of features that are not chosen
 fetch_sources() {
-    local kind url pin src dest dir
-    while read -r kind url pin src dest; do
-        [[ -z $kind || $kind == \#* ]] && continue
+    local feature kind url pin src dest dir
+    while read -r feature kind url pin src dest; do
+        [[ -z $feature || $feature == \#* ]] && continue
+        if [[ -z $dest || ( $feature != core && " ${FEATURES[*]} " != *" $feature "* ) ]]; then
+            echo "Bad line in sources.txt: $feature $kind $url"
+            exit 1
+        fi
+        if ! chosen "$feature"; then
+            if [[ -e $REPO/mpv/$dest ]]; then
+                rm -rf "${REPO:?}/mpv/$dest"
+                echo "Removed mpv/$dest"
+            fi
+            continue
+        fi
         if [[ $kind == file && -f $REPO/mpv/$dest ]] &&
             echo "$pin  $REPO/mpv/$dest" | shasum -a 256 -c --quiet 2>/dev/null; then
             continue
@@ -78,12 +205,32 @@ fetch_sources() {
             patch -s "$REPO/mpv/$dest" < "$REPO/patches/$dest.patch"
             echo "Applied patches/$dest.patch"
         fi
-    done < "$1"
+    done < "$REPO/sources.txt"
+}
+
+# mpv loads every script in scripts/, so features that live in this repo are
+# turned off here instead. mpv.conf includes this file
+write_features_conf() {
+    local conf="$REPO/mpv/features.conf" controls
+    {
+        echo "# Written by install.sh from your feature choices; edits are overwritten."
+        echo "# Run ./install.sh fetch after changing controls in script-opts/uosc.conf"
+    } > "$conf"
+    if ! chosen danmaku; then
+        # uosc would show a placeholder for the danmaku button and toggle
+        controls=$(sed -n 's/^controls=//p' "$REPO/mpv/script-opts/uosc.conf" |
+            sed 's/button:danmaku,//; s/cycle:[^,]*@uosc_danmaku:[^,]*,//')
+        echo "script-opts-append=uosc-controls=$controls" >> "$conf"
+    fi
+    if ! chosen sponsorblock; then
+        echo "script-opts-append=bilibili_sponsorblock-enabled=no" >> "$conf"
+    fi
 }
 
 step_fetch() {
-    fetch_sources "$REPO/sources.txt"
-    echo "Third-party scripts, fonts and shaders are in $REPO/mpv"
+    fetch_sources
+    write_features_conf
+    echo "Third-party scripts, fonts, shaders and models of your features are in $REPO/mpv"
 }
 
 step_link() {
@@ -207,36 +354,35 @@ step_pot() {
     echo "Installed the yt-dlp plugin in $YTDLP_PLUGINS"
 }
 
-# Optional: whisper.cpp and its models (~550 MB) for whisper_subs.lua
+# Adds whisper.cpp and its models (~550 MB) to an existing install
 step_whisper() {
-    if ! command -v brew >/dev/null; then
-        echo "Homebrew is not installed. Install it from https://brew.sh, then run this again."
-        exit 1
-    fi
+    need_brew
+    choose whisper
+    save_choices
     brew install whisper.cpp
-    fetch_sources "$REPO/sources-whisper.txt"
-    echo "Whisper models are in $REPO/mpv/models; Ctrl+g in mpv generates subtitles"
+    step_fetch
+    echo "Ctrl+g in mpv generates subtitles"
 }
 
-run() {
-    local question
-    case $1 in
-        brew)   question="Install Homebrew packages from the Brewfile?" ;;
-        fetch)  question="Download the pinned third-party scripts, fonts, shaders and models into $REPO/mpv?" ;;
-        link)   question="Point $MPV_DIR at $REPO/mpv (an existing one is renamed to a backup)?" ;;
-        ff2mpv) question="Build ff2mpv-rust and install its config and Chrome manifest?" ;;
-        pot)    question="Build the YouTube PO token provider in $POT_DIR and install its yt-dlp plugin?" ;;
-        whisper) question="Optional: install whisper.cpp and download its models (~550 MB) for offline subtitles?" ;;
-        *)      echo "Unknown step: $1 (use brew, fetch, link, ff2mpv, pot or whisper)"; exit 1 ;;
-    esac
-    # Not "ask && step": set -e is ignored inside a function called from an && list
-    if ask "$question"; then
-        "step_$1"
-    fi
-}
-
+load_choices
 if [[ $# -gt 0 ]]; then
-    run "$1"
-else
-    for step in brew fetch link ff2mpv pot whisper; do run "$step"; done
+    case $1 in
+        brew | fetch | link | ff2mpv | pot | whisper) "step_$1" ;;
+        *) echo "Unknown step: $1 (use brew, fetch, link, ff2mpv, pot or whisper)"; exit 1 ;;
+    esac
+    exit
 fi
+
+need_brew
+if ! choose_features; then
+    echo "Nothing was changed"
+    exit
+fi
+save_choices
+step_brew
+step_fetch
+step_link
+if chosen ff2mpv; then step_ff2mpv; fi
+if chosen youtube; then step_pot; fi
+echo
+echo "Done. Run ./install.sh again to add or remove features."

@@ -6,6 +6,9 @@
 local utils = require "mp.utils"
 
 local options = {
+    -- install.sh turns this off when SponsorBlock is left out
+    enabled = true,
+
     server_address = "https://bsbsb.top",
 
     -- Categories to skip, comma-separated
@@ -230,4 +233,6 @@ local function file_loaded()
     if query then load_video(query, part, this_generation) end
 end
 
-mp.register_event("file-loaded", file_loaded)
+if options.enabled then
+    mp.register_event("file-loaded", file_loaded)
+end

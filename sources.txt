@@ -1,16 +1,19 @@
 # Third-party files that install.sh downloads into mpv/.
 # They are not committed; each one is pinned to the version that was tested.
+# The first column is the feature it belongs to (core is always installed).
 #
-# git <repo> <commit> <path in repo> <path under mpv/>
-# zip <url> <sha256> <path in zip> <path under mpv/>
-# file <url> <sha256> <file name> <path under mpv/>
+# <feature> git <repo> <commit> <path in repo> <path under mpv/>
+# <feature> zip <url> <sha256> <path in zip> <path under mpv/>
+# <feature> file <url> <sha256> <file name> <path under mpv/>
 
-zip https://github.com/tomasklaen/uosc/releases/download/5.13.0/uosc.zip 4be9da3289285300fa374496c3f1bfd7bb20ac08e890d25bd5a06b28eebe4882 scripts/uosc scripts/uosc
-zip https://github.com/tomasklaen/uosc/releases/download/5.13.0/uosc.zip 4be9da3289285300fa374496c3f1bfd7bb20ac08e890d25bd5a06b28eebe4882 fonts fonts
-git https://github.com/po5/thumbfast 0f711de3138c9bd6718209d819ac54022c23ded2 thumbfast.lua scripts/thumbfast.lua
-git https://github.com/po5/memo e0624611438b2e19ef4b7e24f53461c9d0304b07 memo.lua scripts/memo.lua
-git https://github.com/Eisa01/mpv-scripts 6cd0b17ad0f6758ead3d3ab98baf3a564b7de876 scripts/SmartCopyPaste.lua scripts/SmartCopyPaste.lua
-git https://github.com/Tony15246/uosc_danmaku d896f179aac1c9e7e657664dbe8a69567a9a4900 . scripts/uosc_danmaku
-git https://github.com/po5/mpv_sponsorblock 7785c1477103f2fafabfd65fdcf28ef26e6d7f0d sponsorblock.lua scripts/sponsorblock.lua
-git https://github.com/po5/mpv_sponsorblock 7785c1477103f2fafabfd65fdcf28ef26e6d7f0d sponsorblock_shared scripts/sponsorblock_shared
-zip https://github.com/bloc97/Anime4K/releases/download/v4.0.1/Anime4K_v4.0.zip 139cd282086457c5adc79caf7b75b8b825091d71c9b54958c18745fea62d7ed7 . shaders
+core zip https://github.com/tomasklaen/uosc/releases/download/5.13.0/uosc.zip 4be9da3289285300fa374496c3f1bfd7bb20ac08e890d25bd5a06b28eebe4882 scripts/uosc scripts/uosc
+core zip https://github.com/tomasklaen/uosc/releases/download/5.13.0/uosc.zip 4be9da3289285300fa374496c3f1bfd7bb20ac08e890d25bd5a06b28eebe4882 fonts fonts
+core git https://github.com/po5/thumbfast 0f711de3138c9bd6718209d819ac54022c23ded2 thumbfast.lua scripts/thumbfast.lua
+core git https://github.com/po5/memo e0624611438b2e19ef4b7e24f53461c9d0304b07 memo.lua scripts/memo.lua
+core git https://github.com/Eisa01/mpv-scripts 6cd0b17ad0f6758ead3d3ab98baf3a564b7de876 scripts/SmartCopyPaste.lua scripts/SmartCopyPaste.lua
+danmaku git https://github.com/Tony15246/uosc_danmaku d896f179aac1c9e7e657664dbe8a69567a9a4900 . scripts/uosc_danmaku
+sponsorblock git https://github.com/po5/mpv_sponsorblock 7785c1477103f2fafabfd65fdcf28ef26e6d7f0d sponsorblock.lua scripts/sponsorblock.lua
+sponsorblock git https://github.com/po5/mpv_sponsorblock 7785c1477103f2fafabfd65fdcf28ef26e6d7f0d sponsorblock_shared scripts/sponsorblock_shared
+anime4k zip https://github.com/bloc97/Anime4K/releases/download/v4.0.1/Anime4K_v4.0.zip 139cd282086457c5adc79caf7b75b8b825091d71c9b54958c18745fea62d7ed7 . shaders
+whisper file https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin 394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2 ggml-large-v3-turbo-q5_0.bin models/ggml-large-v3-turbo-q5_0.bin
+whisper file https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v6.2.0.bin 2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987 ggml-silero-v6.2.0.bin models/ggml-silero-v6.2.0.bin

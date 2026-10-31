@@ -3,10 +3,8 @@ tap "gumengsama/tap"
 brew "mpv"
 brew "yt-dlp"
 brew "ffmpeg"
-# node for the YouTube PO token provider (install.sh pot)
-brew "node"
-# python3 for the YouTube SponsorBlock script
-brew "python"
+# Packages for optional features (node, python, whisper.cpp) are installed by
+# install.sh when you choose them
 
 # /Applications/mpv.app, so mpv opens from Finder and the Dock
 cask "mpv-wrapper"

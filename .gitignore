@@ -1,5 +1,6 @@
-# Downloaded by install.sh from sources.txt and sources-whisper.txt
+# Downloaded by install.sh from sources.txt
 /mpv/scripts/*
+!/mpv/scripts/anime4k.lua
 !/mpv/scripts/bilibili_sponsorblock.lua
 !/mpv/scripts/sprite_thumbnails.lua
 !/mpv/scripts/whisper_subs.lua
@@ -8,6 +9,10 @@
 /mpv/models/
 /mpv/fonts/
 /mpv/shaders/
+
+# Written by install.sh from your feature choices
+/.install-features
+/mpv/features.conf
 
 # Personal history written by mpv and its scripts
 /mpv/watch_later/
