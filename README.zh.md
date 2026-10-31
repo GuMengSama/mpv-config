@@ -7,8 +7,9 @@
 ## 内容
 
 - `mpv/`：`mpv.conf`、`input.conf`、`script-opts/`、`bilibili_sponsorblock.lua` 和 `whisper_subs.lua`
-- `sources.txt`：固定版本的第三方脚本、字体、着色器和 Whisper 模型，由 `install.sh` 下载
-- `Brewfile`：mpv、yt-dlp、ffmpeg、python、whisper.cpp、node、[mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
+- `sources.txt`：固定版本的第三方脚本、字体和着色器，由 `install.sh` 下载
+- `sources-whisper.txt`：固定版本的 Whisper 模型，由可选的 `whisper` 步骤下载
+- `Brewfile`：mpv、yt-dlp、ffmpeg、python、node、[mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
 - `ff2mpv/ff2mpv-rust.json`：[ff2mpv-rust](https://github.com/ryze312/ff2mpv-rust) 配置
 
 第三方组件：[uosc](https://github.com/tomasklaen/uosc)、
@@ -22,7 +23,8 @@
 
 `whisper_subs.lua` 使用 [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
 离线生成字幕，从当前播放位置开始并保持领先于播放进度。`Ctrl+g` 开始或停止；
-选项见 `script-opts/whisper_subs.conf`。模型（约 550 MB）由 `fetch` 下载。
+选项见 `script-opts/whisper_subs.conf`。此功能可选：`whisper` 步骤会安装
+whisper.cpp 并下载模型（约 550 MB）。
 
 ## 安装
 
@@ -42,6 +44,7 @@ cd mpv-config
 | `link` | 将 `~/.config/mpv` 链接到 `mpv/`。已有目录会重命名为 `~/.config/mpv.backup-<日期>` |
 | `ff2mpv` | 编译 ff2mpv-rust 到 `~/.local/bin`，链接 `~/.config/ff2mpv-rust.json`，并安装 Chrome native messaging 清单。用本机证书为其签名（见下文）。未安装 Rust 时通过 rustup 安装 |
 | `pot` | 在 `~/bgutil-ytdlp-pot-provider` 编译 [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) 并安装其 yt-dlp 插件。YouTube 的许多视频流需要它生成的 PO token |
+| `whisper` | 可选。安装 whisper.cpp 并下载 `sources-whisper.txt` 中的条目到 `mpv/`，供 `whisper_subs.lua` 使用。不需要生成字幕可跳过 |
 
 不会覆盖已有的 ff2mpv 文件。完成后安装
 [ff2mpv 扩展](https://chromewebstore.google.com/detail/ff2mpv/ephjcajbkgplkjmelpglennepbpmdpjg)

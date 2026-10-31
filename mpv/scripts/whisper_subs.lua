@@ -294,7 +294,7 @@ local function toggle()
     end
     for _, path in ipairs(required) do
         if not file_exists(path) then
-            log_osd("not found: " .. path, 5)
+            log_osd("not found: " .. path .. "\nInstall it with ./install.sh whisper", 5)
             return
         end
     end

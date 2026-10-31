@@ -2,7 +2,7 @@
 # Restores this mpv setup on a Mac. Asks before each step and is safe to re-run.
 #
 #   ./install.sh            run every step
-#   ./install.sh <step>     run one step: brew, fetch, link, ff2mpv, pot
+#   ./install.sh <step>     run one step: brew, fetch, link, ff2mpv, pot, whisper
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
@@ -43,7 +43,8 @@ step_brew() {
     brew bundle --file "$REPO/Brewfile"
 }
 
-step_fetch() {
+# Downloads the entries of a sources file into mpv/ and verifies them
+fetch_sources() {
     local kind url pin src dest dir
     while read -r kind url pin src dest; do
         [[ -z $kind || $kind == \#* ]] && continue
@@ -73,8 +74,12 @@ step_fetch() {
         else
             cp "$dir/$src" "$REPO/mpv/$dest"
         fi
-    done < "$REPO/sources.txt"
-    echo "Third-party scripts, fonts, shaders and models are in $REPO/mpv"
+    done < "$1"
+}
+
+step_fetch() {
+    fetch_sources "$REPO/sources.txt"
+    echo "Third-party scripts, fonts and shaders are in $REPO/mpv"
 }
 
 step_link() {
@@ -198,6 +203,17 @@ step_pot() {
     echo "Installed the yt-dlp plugin in $YTDLP_PLUGINS"
 }
 
+# Optional: whisper.cpp and its models (~550 MB) for whisper_subs.lua
+step_whisper() {
+    if ! command -v brew >/dev/null; then
+        echo "Homebrew is not installed. Install it from https://brew.sh, then run this again."
+        exit 1
+    fi
+    brew install whisper.cpp
+    fetch_sources "$REPO/sources-whisper.txt"
+    echo "Whisper models are in $REPO/mpv/models; Ctrl+g in mpv generates subtitles"
+}
+
 run() {
     local question
     case $1 in
@@ -206,7 +222,8 @@ run() {
         link)   question="Point $MPV_DIR at $REPO/mpv (an existing one is renamed to a backup)?" ;;
         ff2mpv) question="Build ff2mpv-rust and install its config and Chrome manifest?" ;;
         pot)    question="Build the YouTube PO token provider in $POT_DIR and install its yt-dlp plugin?" ;;
-        *)      echo "Unknown step: $1 (use brew, fetch, link, ff2mpv or pot)"; exit 1 ;;
+        whisper) question="Optional: install whisper.cpp and download its models (~550 MB) for offline subtitles?" ;;
+        *)      echo "Unknown step: $1 (use brew, fetch, link, ff2mpv, pot or whisper)"; exit 1 ;;
     esac
     # Not "ask && step": set -e is ignored inside a function called from an && list
     if ask "$question"; then
@@ -217,5 +234,5 @@ run() {
 if [[ $# -gt 0 ]]; then
     run "$1"
 else
-    for step in brew fetch link ff2mpv pot; do run "$step"; done
+    for step in brew fetch link ff2mpv pot whisper; do run "$step"; done
 fi

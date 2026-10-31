@@ -1,4 +1,4 @@
-# Downloaded by install.sh from sources.txt
+# Downloaded by install.sh from sources.txt and sources-whisper.txt
 /mpv/scripts/*
 !/mpv/scripts/bilibili_sponsorblock.lua
 !/mpv/scripts/whisper_subs.lua
