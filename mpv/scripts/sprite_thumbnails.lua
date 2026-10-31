@@ -154,55 +154,80 @@ local function start(sprites)
     set_active(true)
 end
 
+-- Bilibili's APIs answer {code, data}, or {code, result} for bangumi
 local function get_json(url, callback)
     local gen = generation
     curl(url, nil, function(ok, stdout)
         if gen ~= generation then return end
         local json = ok and utils.parse_json(stdout or "")
-        if not json or json.code ~= 0 or type(json.data) ~= "table" then
+        local data = json and json.code == 0 and (json.data or json.result)
+        if type(data) ~= "table" then
             msg.verbose("no data from " .. url)
             return
         end
-        callback(json.data)
+        callback(data)
     end)
 end
 
 -- Bilibili's player API, as the website uses it. index[1] is a placeholder;
 -- the rest are the tile start times
+local function videoshot(bvid, cid)
+    get_json("https://api.bilibili.com/x/player/videoshot?index=1&bvid=" .. bvid .. "&cid=" .. cid,
+        function(data)
+            if type(data.image) ~= "table" or #data.image == 0
+                or type(data.index) ~= "table" or #data.index < 2 then
+                msg.verbose("this video has no preview sprites")
+                return
+            end
+            local sheet_urls, times = {}, {}
+            for i, url in ipairs(data.image) do
+                sheet_urls[i] = url:sub(1, 2) == "//" and ("https:" .. url) or url
+            end
+            for i = 2, #data.index do
+                times[i - 1] = data.index[i]
+            end
+            start({
+                sheets = sheet_urls,
+                columns = data.img_x_len, rows = data.img_y_len,
+                width = data.img_x_size, height = data.img_y_size,
+                times = times,
+            })
+        end)
+end
+
 local function bilibili(path)
-    local id = path:match("/video/(BV%w+)")
-    local query = id and ("bvid=" .. id)
+    -- Bangumi episode (a season URL becomes a playlist of these)
+    local ep = tonumber(path:match("/bangumi/play/ep(%d+)"))
+    if ep then
+        get_json("https://api.bilibili.com/pgc/view/web/season?ep_id=" .. ep, function(season)
+            local lists = {season.episodes}
+            for _, section in ipairs(season.section or {}) do
+                table.insert(lists, section.episodes)
+            end
+            for _, list in ipairs(lists) do
+                for _, episode in ipairs(list or {}) do
+                    if episode.id == ep then
+                        videoshot(episode.bvid, episode.cid)
+                        return
+                    end
+                end
+            end
+        end)
+        return
+    end
+
+    local query = path:match("/video/(BV%w+)")
+    query = query and ("bvid=" .. query)
     if not query then
-        id = path:match("/video/av(%d+)")
-        query = id and ("aid=" .. id)
+        query = path:match("/video/av(%d+)")
+        query = query and ("aid=" .. query)
     end
     if not query then return end
     local page = tonumber(path:match("[?&]p=(%d+)")) or 1
 
     get_json("https://api.bilibili.com/x/web-interface/view?" .. query, function(view)
         local part = view.pages and (view.pages[page] or view.pages[1])
-        if not part then return end
-        get_json("https://api.bilibili.com/x/player/videoshot?index=1&cid=" .. part.cid .. "&" .. query,
-            function(data)
-                if type(data.image) ~= "table" or #data.image == 0
-                    or type(data.index) ~= "table" or #data.index < 2 then
-                    msg.verbose("this video has no preview sprites")
-                    return
-                end
-                local sheet_urls, times = {}, {}
-                for i, url in ipairs(data.image) do
-                    sheet_urls[i] = url:sub(1, 2) == "//" and ("https:" .. url) or url
-                end
-                for i = 2, #data.index do
-                    times[i - 1] = data.index[i]
-                end
-                start({
-                    sheets = sheet_urls,
-                    columns = data.img_x_len, rows = data.img_y_len,
-                    width = data.img_x_size, height = data.img_y_size,
-                    times = times,
-                })
-            end)
+        if part then videoshot(view.bvid, part.cid) end
     end)
 end
 
@@ -257,7 +282,7 @@ mp.register_event("start-file", function()
 
     -- Starts before yt-dlp finishes, since the API doesn't need it
     local path = mp.get_property("path", "")
-    if path:find("^https?://[%w.]*bilibili%.com/video/") then
+    if path:find("^https?://[%w.]*bilibili%.com/video/") or path:find("^https?://[%w.]*bilibili%.com/bangumi/play/ep") then
         bilibili(path)
     end
 end)
