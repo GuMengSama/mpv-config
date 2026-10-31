@@ -1,0 +1,63 @@
+--- thumbfast.lua
++++ thumbfast.lua
+@@ -152,6 +152,9 @@
+ local last_seek_time
+ 
+ local effective_w, effective_h = options.max_width, options.max_height
++-- True while sprite_thumbnails.lua shows the site's preview sprites; it then
++-- gets uosc's requests and announces its own size
++local sprites = false
+ local real_w, real_h
+ local last_real_w, last_real_h
+ 
+@@ -397,6 +400,7 @@
+ local info_timer = nil
+ 
+ local function info(w, h)
++    if sprites then return end
+     local rotate = properties["video-params"] and properties["video-params"]["rotate"]
+     local image = properties["current-tracks/video"] and properties["current-tracks/video"]["image"]
+     local albumart = image and properties["current-tracks/video"]["albumart"]
+@@ -504,6 +508,15 @@
+         table.insert(args, "--scripts="..client_script_path)
+     end
+ 
++    -- Sites like Bilibili refuse the stream without the Referer and
++    -- User-Agent ytdl_hook gave the main player; --no-config drops them
++    if ytdl then
++        for _, header in ipairs(mp.get_property_native("http-header-fields", {})) do
++            table.insert(args, "--http-header-fields-append="..header)
++        end
++        table.insert(args, "--user-agent="..mp.get_property("user-agent", ""))
++    end
++
+     table.insert(args, "--")
+     table.insert(args, path)
+ 
+@@ -715,6 +728,7 @@
+ file_timer:kill()
+ 
+ local function clear()
++    if sprites then mp.commandv("script-message-to", "sprite_thumbnails", "clear") end
+     file_timer:kill()
+     seek_timer:kill()
+     if options.quit_after_inactivity > 0 then
+@@ -751,6 +765,10 @@
+ activity_timer:kill()
+ 
+ local function thumb(time, r_x, r_y, script)
++    if sprites then
++        mp.commandv("script-message-to", "sprite_thumbnails", "thumb", time, r_x, r_y)
++        return
++    end
+     if disabled then return end
+ 
+     time = tonumber(time)
+@@ -945,6 +963,7 @@
+ mp.observe_property("duration", "native", on_duration)
+ 
+ mp.register_script_message("thumb", thumb)
++mp.observe_property("user-data/sprite_thumbnails/active", "bool", function(_, active) sprites = active end)
+ mp.register_script_message("clear", clear)
+ 
+ mp.register_event("file-loaded", file_load)

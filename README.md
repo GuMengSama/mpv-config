@@ -7,9 +7,10 @@ script.
 
 ## Contents
 
-- `mpv/`: `mpv.conf`, `input.conf`, `script-opts/`, `bilibili_sponsorblock.lua`, and `whisper_subs.lua`
+- `mpv/`: `mpv.conf`, `input.conf`, `script-opts/`, `bilibili_sponsorblock.lua`, `sprite_thumbnails.lua`, and `whisper_subs.lua`
 - `sources.txt`: pinned third-party scripts, fonts and shaders, downloaded by `install.sh`
 - `sources-whisper.txt`: pinned Whisper models, downloaded by the optional `whisper` step
+- `patches/`: local changes that `fetch` applies to the downloaded files (thumbfast hands Bilibili and YouTube videos to `sprite_thumbnails.lua` and forwards the site's HTTP headers)
 - `Brewfile`: mpv, yt-dlp, ffmpeg, python, node, [mpv-wrapper](https://github.com/GuMengSama/mpv-wrapper)
 - `ff2mpv/ff2mpv-rust.json`: [ff2mpv-rust](https://github.com/ryze312/ff2mpv-rust) config
 
@@ -21,6 +22,9 @@ Third-party components: [uosc](https://github.com/tomasklaen/uosc),
 [Anime4K](https://github.com/bloc97/Anime4K).
 `bilibili_sponsorblock.lua` uses data from
 [BilibiliSponsorBlock](https://github.com/hanydd/BilibiliSponsorBlock).
+`sprite_thumbnails.lua` shows seek bar thumbnails for Bilibili and YouTube videos
+from the preview sprites the websites use, so they appear at once; local files
+and other sites keep thumbfast.
 
 `whisper_subs.lua` generates subtitles offline with
 [whisper.cpp](https://github.com/ggml-org/whisper.cpp), starting at the playhead
@@ -43,7 +47,7 @@ cd mpv-config
 | Step | Action |
 |---|---|
 | `brew` | `brew bundle` |
-| `fetch` | Downloads `sources.txt` entries into `mpv/` and verifies them |
+| `fetch` | Downloads `sources.txt` entries into `mpv/`, verifies them, and applies `patches/` |
 | `link` | Symlinks `~/.config/mpv` to `mpv/`. An existing directory is renamed to `~/.config/mpv.backup-<date>` |
 | `ff2mpv` | Builds ff2mpv-rust into `~/.local/bin`, symlinks `~/.config/ff2mpv-rust.json`, and installs the Chrome native messaging manifest. Signs the binary with a local certificate (see below). Installs Rust via rustup if absent |
 | `pot` | Builds [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) in `~/bgutil-ytdlp-pot-provider` and installs its yt-dlp plugin. YouTube refuses many streams without the PO tokens it generates |

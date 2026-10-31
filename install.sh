@@ -74,6 +74,10 @@ fetch_sources() {
         else
             cp "$dir/$src" "$REPO/mpv/$dest"
         fi
+        if [[ -f $REPO/patches/$dest.patch ]]; then
+            patch -s "$REPO/mpv/$dest" < "$REPO/patches/$dest.patch"
+            echo "Applied patches/$dest.patch"
+        fi
     done < "$1"
 }
 
